@@ -33,6 +33,15 @@
 
 DIF_NAMESPACE
 
+struct Marker
+{
+	glm::vec3 position;
+	int msToNext;
+	int smoothing;
+	int initialPathPosition = -1;
+	int initialTargetPosition = -1;
+};
+
 class DIFBuilder {
 public:
 	struct Point {
@@ -73,6 +82,8 @@ public:
 protected:
 	std::vector<std::string> mMaterials;
 	std::vector<Triangle> mTriangles;
+	std::vector<std::pair<Interior, std::vector<Marker>>> mPathedInteriors;
+	std::vector<GameEntity> mGameEntities;
 	F32 mScale;
 	
 
@@ -84,6 +95,8 @@ public:
 
 	void addTriangle(const Triangle &triangle);
 	void addTriangle(const Triangle &triangle, const std::string &material);
+	void addPathedInterior(const Interior& interior, std::vector<Marker> path);
+	void addEntity(const GameEntity& entity);
 	void build(DIF &dif,bool flipNormals = false,bool fastBSP = false);
 
 	inline F32 getScale() const {

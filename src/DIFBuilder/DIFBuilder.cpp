@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2016, HiGuy Smith
 // All rights reserved.
 // 
@@ -71,6 +71,15 @@ void DIFBuilder::addTriangle(const Triangle &triangle, const std::string &materi
 	addTriangle(tri);
 }
 
+void DIFBuilder::addPathedInterior(const Interior &interior, std::vector<Marker> path)
+{
+	mPathedInteriors.push_back(std::pair<Interior, std::vector<Marker>>(interior, path));
+}
+
+void DIFBuilder::addEntity(const GameEntity& entity)
+{
+	mGameEntities.push_back(entity);
+}
 
 //Here come the dif writing functions, algorithm is nearly the same as the ones used in map2dif
 short ExportPlane(Interior *interior, POLYGON poly,std::vector<ObjectHash>* planehashes)
@@ -619,25 +628,6 @@ void ExportCoordBins(Interior* interior)
 	}
 }
 
-void FixPlanes(std::vector<Interior::Plane>& planes,std::vector<glm::vec3>& normals)
-{
-	for (int i = 0; i < planes.size(); i++)
-	{
-		if (planes[i].planeDistance < 0.00001 && planes[i].planeDistance > -0.00001 || isnan(planes[i].planeDistance))
-			planes[i].planeDistance = 0;
-
-	}
-	for (int i = 0; i < normals.size(); i++)
-	{
-		if (normals[i].x < 0.00001 && normals[i].x > -0.00001 || isnan(normals[i].x))
-			normals[i].x = 0;
-		if (normals[i].y < 0.00001 && normals[i].y > -0.00001 || isnan(normals[i].y))
-			normals[i].y = 0;
-		if (normals[i].z < 0.00001 && normals[i].y > -0.00001 || isnan(normals[i].z))
-			normals[i].z = 0;
-	}
-}
-
 void DIFBuilder::build(DIF &dif,bool flipNormals,bool fastBSP) 
 {
 	POLYGON polyList;
@@ -775,9 +765,50 @@ void DIFBuilder::build(DIF &dif,bool flipNormals,bool fastBSP)
 
 	ExportCoordBins(&interior);
 
+	printf("Exporting PathedInteriors\n");
+	for (auto& it : mPathedInteriors)
+	{
+		int index = dif.subObject.size();
+		dif.subObject.push_back(it.first);
+		InteriorPathFollower pathedInterior;
+		pathedInterior.datablock = std::string("PathedDefault");
+		pathedInterior.name = std::string("MustChange");
+		pathedInterior.offset = glm::vec3(0, 0, 0);
+		pathedInterior.interiorResIndex = index;
+		pathedInterior.totalMS = 0;
+
+		for (auto& it2 : it.second)
+		{
+			InteriorPathFollower::WayPoint marker;
+			marker.position = it2.position;
+			marker.rotation = glm::quat();
+			marker.msToNext = it2.msToNext;
+			marker.smoothingType = it2.smoothing;
+			pathedInterior.totalMS += it2.msToNext;
+			pathedInterior.wayPoint.push_back(marker);
+		}
+
+		if (it.second[0].initialPathPosition != -1)
+		{
+			char buffer[32]; //How big can this number be, should be enough
+			sprintf(buffer, "%d", it.second[0].initialPathPosition);
+			pathedInterior.properties.push_back(std::pair<std::string, std::string>(std::string("initialPathPosition"), std::string(buffer)));
+		}
+
+		char buffer[32];
+		sprintf(buffer, "%d", it.second[0].initialTargetPosition);
+		pathedInterior.properties.push_back(std::pair<std::string, std::string>(std::string("initialTargetPosition"), std::string(buffer)));
+	}
+
+	printf("Exporting Entities\n");
+	dif.gameEntity = mGameEntities;
+	dif.readGameEntities = true;
+
 	printf("Finalizing\n");
 	//FixPlanes(interior.plane, interior.normal);
 	dif.interior.push_back(interior);
+
+
 }
 
 BoxF DIFBuilder::getBoundingBox() {

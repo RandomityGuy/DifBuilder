@@ -1,5 +1,6 @@
 #include "DIFBuilder/BSPLib.h"
 #include <glm\glm.hpp>
+#include <algorithm>
 
 /* http://www.cs.utah.edu/~jsnider/SeniorProj/BSP/default.htm
  * is a very good tutorial on how to BSP tree
@@ -25,7 +26,7 @@ Plane* SelectBestSplitter(POLYGON *PolyList)
 	{
 		if (Splitter->BeenUsedAsSplitter != true)
 		{
-			Plane SplittersPlane = Plane(Splitter->VertexList[0].p, Splitter->Normal);
+			Plane SplittersPlane = Splitter->plane; //Plane(Splitter->VertexList[0].p, Splitter->Normal);
 			CurrentPoly = PolyList;
 			unsigned long score, splits, backfaces, frontfaces;
 			score = splits = backfaces = frontfaces = 0;
@@ -66,7 +67,7 @@ Plane* SelectBestSplitter(POLYGON *PolyList)
 
 	if (SelectedPoly == NULL) return NULL;
 	SelectedPoly->BeenUsedAsSplitter = true; 
-	return new Plane(SelectedPoly->VertexList[0].p, SelectedPoly->Normal);
+	return &SelectedPoly->plane;
 } // End Function
 
 Plane* SelectBestSplitter_Fast(POLYGON *PolyList)
@@ -248,7 +249,7 @@ int ClassifyPoly(Plane *Pl, POLYGON * Poly)
 	int Infront = 0;
 	int Behind = 0;
 	int OnPlane = 0;
-	float result;
+	int result;
 	for (int a = 0; a < Poly->NumberOfVertices; a++)
 	{
 
