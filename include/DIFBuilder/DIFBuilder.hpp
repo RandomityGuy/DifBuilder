@@ -74,6 +74,7 @@ protected:
 	std::vector<std::string> mMaterials;
 	std::vector<Triangle> mTriangles;
 	F32 mScale;
+	
 
 public:
 	DIFBuilder() : mScale(1.0f) {
@@ -83,7 +84,7 @@ public:
 
 	void addTriangle(const Triangle &triangle);
 	void addTriangle(const Triangle &triangle, const std::string &material);
-	void build(DIF &dif);
+	void build(DIF &dif,bool flipNormals = false,bool fastBSP = false);
 
 	inline F32 getScale() const {
 		return mScale;
