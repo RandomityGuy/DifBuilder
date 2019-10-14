@@ -97,7 +97,7 @@ public:
 	void addTriangle(const Triangle &triangle, const std::string &material);
 	void addPathedInterior(const Interior& interior, std::vector<Marker> path);
 	void addEntity(const GameEntity& entity);
-	void build(DIF &dif,bool flipNormals = false,bool fastBSP = false);
+	void build(DIF &dif,bool flipNormals = false);
 
 	inline F32 getScale() const {
 		return mScale;
