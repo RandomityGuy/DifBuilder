@@ -64,19 +64,14 @@ public:
 
 struct POLYGON;
 
-struct LEAF
-{
-	std::vector<POLYGON> polygons;
-};
-
-struct NODE
+struct BSPNode
 {
 	bool IsLeaf = false;
-	Plane Plane;
-	NODE* Front = NULL;
-	NODE* Back = NULL;
-	LEAF* FrontLeaf = NULL;
-	LEAF* BackLeaf = NULL;
+	Plane plane;
+	BSPNode* Front = NULL;
+	BSPNode* Back = NULL;
+	POLYGON* poly = NULL;
+	glm::vec3* center = NULL;;
 };
 
 
@@ -95,9 +90,8 @@ struct POLYGON
 	int* Indices;
 	POLYGON* Next;
 	Plane plane;
-	bool BeenUsedAsSplitter;
 	long TextureIndex;
-	LEAF* leaf = NULL;
+	BSPNode* node = NULL;
 	bool IsUsed = false;
 };
 
@@ -129,20 +123,12 @@ inline int GetCount(POLYGON* p)
 	return count;
 }
 
-void InitPolygons(POLYGON polyList);
-void BuildBspTree(NODE& node, POLYGON* PolyList, bool fastSplit);
-Plane* SelectBestSplitter(POLYGON *PolyList);
-Plane* SelectBestSplitter_Fast(POLYGON *PolyList);
-int ClassifyPoly(Plane *Plane, POLYGON * Poly);
-int ClassifyPoint(glm::vec3 *pos, Plane Plane);
+std::vector<BSPNode>* BuildBSP(std::vector<BSPNode> Nodes);
+
+BSPNode* BuildBSPRecurse(std::vector<BSPNode> Nodes);
+
 //void SplitPolygon(POLYGON *Poly, Plane *Plane, POLYGON *FrontSplit, POLYGON *BackSplit);
-enum
-{
-	CP_FRONT,
-	CP_BACK,
-	CP_ONPLANE,
-	CP_SPANNING
-};
+
 //bool Get_Intersect(glm::vec3 *linestart, glm::vec3 *lineend, glm::vec3 *vertex, glm::vec3 *normal, glm::vec3 & intersection, float &percentage);
 //void DeletePolygon(POLYGON *Poly);
-void GatherBrushes(NODE node, std::vector<POLYGON>* list);
+void GatherBrushes(BSPNode node, std::vector<POLYGON>* list);
