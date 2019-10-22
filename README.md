@@ -3,6 +3,9 @@ Builds MBG DIFs using the DIF library
 
 Modified by me for adding support for mostly everything in DIFs.
 
+# Performance
+80000 polygons in 5 minutes, resultant difs run at 60fps
+
 
 # Unsupported Features
 - Edges
