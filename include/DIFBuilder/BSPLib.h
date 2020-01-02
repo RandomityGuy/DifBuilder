@@ -1,5 +1,7 @@
 #pragma once
 #include <stdlib.h>
+//Those PCs which cannot support the below line wouldnt be able to convert the obj to dif quickly anyway
+#define GLM_FORCE_INTRINSICS
 #include <glm/glm.hpp>
 #include <vector>
 
@@ -64,14 +66,19 @@ public:
 
 struct POLYGON;
 
-struct BSPNode
+struct LEAF
+{
+	std::vector<POLYGON> polygons;
+};
+
+struct NODE
 {
 	bool IsLeaf = false;
-	Plane plane;
-	BSPNode* Front = NULL;
-	BSPNode* Back = NULL;
-	POLYGON* poly = NULL;
-	glm::vec3* center = NULL;;
+	Plane Plane;
+	NODE* Front = NULL;
+	NODE* Back = NULL;
+	LEAF* FrontLeaf = NULL;
+	LEAF* BackLeaf = NULL;
 };
 
 
@@ -90,8 +97,9 @@ struct POLYGON
 	int* Indices;
 	POLYGON* Next;
 	Plane plane;
+	bool BeenUsedAsSplitter;
 	long TextureIndex;
-	BSPNode* node = NULL;
+	LEAF* leaf = NULL;
 	bool IsUsed = false;
 };
 
@@ -123,12 +131,20 @@ inline int GetCount(POLYGON* p)
 	return count;
 }
 
-std::vector<BSPNode>* BuildBSP(std::vector<BSPNode> Nodes);
-
-BSPNode* BuildBSPRecurse(std::vector<BSPNode> Nodes);
-
+void InitPolygons(POLYGON polyList);
+void BuildBspTree(NODE& node, POLYGON* PolyList, bool fastSplit);
+Plane* SelectBestSplitter(POLYGON *PolyList);
+Plane* SelectBestSplitter_Fast(POLYGON *PolyList);
+int ClassifyPoly(Plane *Plane, POLYGON * Poly);
+int ClassifyPoint(glm::vec3 *pos, Plane Plane);
 //void SplitPolygon(POLYGON *Poly, Plane *Plane, POLYGON *FrontSplit, POLYGON *BackSplit);
-
+enum
+{
+	CP_FRONT,
+	CP_BACK,
+	CP_ONPLANE,
+	CP_SPANNING
+};
 //bool Get_Intersect(glm::vec3 *linestart, glm::vec3 *lineend, glm::vec3 *vertex, glm::vec3 *normal, glm::vec3 & intersection, float &percentage);
 //void DeletePolygon(POLYGON *Poly);
-void GatherBrushes(BSPNode node, std::vector<POLYGON>* list);
+void GatherBrushes(NODE node, std::vector<POLYGON>* list);
