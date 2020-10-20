@@ -93,6 +93,8 @@ public:
 	}
 	DIFBuilder(const DIF &dif);
 
+	bool exportEmitStrings = false;
+
 	void addTriangle(const Triangle &triangle);
 	void addTriangle(const Triangle &triangle, const std::string &material);
 	void addPathedInterior(const Interior& interior, std::vector<Marker> path);

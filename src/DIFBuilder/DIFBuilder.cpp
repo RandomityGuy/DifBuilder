@@ -411,7 +411,7 @@ int ExportEmitString(Interior* interior,std::vector<U8> emitstring, std::vector<
 	//}
 }
 
-void ExportConvexHulls(Interior* interior, std::vector<std::vector<Polygon>> polys, std::unordered_map<int, int>* pointHashes, std::unordered_map<int, int>* planeHashes,std::vector<ObjectHash>* emitstrHashes)
+void ExportConvexHulls(Interior* interior, std::vector<std::vector<Polygon>> polys, std::unordered_map<int, int>* pointHashes, std::unordered_map<int, int>* planeHashes,std::vector<ObjectHash>* emitstrHashes,bool exportEmitStrings = false)
 {
 	for (int polyIndex = 0; polyIndex < polys.size(); polyIndex++)
 	{
@@ -494,147 +494,159 @@ void ExportConvexHulls(Interior* interior, std::vector<std::vector<Polygon>> pol
 		hull.maxZ = maxz;
 
 		//This is straight up copied from map2dif
-		for (int i = 0; i < hullPoints.size(); i++)
+		if (exportEmitStrings)
 		{
-			static std::vector<U32> emitPoints(128);
-			static std::vector<U16> emitEdges(128);
-			static std::vector<U32> emitPolys;
-
-			emitPoints.clear();
-			emitEdges.clear();
-			emitPolys.clear();
-
-			int point = hullPoints[i];
-
-			for (int j = 0; j < hullpolys.size(); j++)
+			for (int i = 0; i < hullPoints.size(); i++)
 			{
-				bool found = false;
-				for (int k = 0; k < hullpolys[j].points.size(); k++)
-					if (hullpolys[j].points[k] == point)
-						found = true;
+				static std::vector<U32> emitPoints(128);
+				static std::vector<U16> emitEdges(128);
+				static std::vector<U32> emitPolys;
 
-				if (found)
-				{
-					for (int k = 0; k < hullpolys[j].points.size(); k++)
-						emitPoints.push_back(hullpolys[j].points[k]);
+				emitPoints.clear();
+				emitEdges.clear();
+				emitPolys.clear();
 
-					for (int k = 0; k < hullpolys[j].points.size(); k++)
-					{
-						int first = hullpolys[j].points[k];
-						int next = hullpolys[j].points[(k + 1) % hullpolys[j].points.size()];
+				int point = hullPoints[i];
 
-						int edge = (((int)fmin(first, next) << 8) | ((int)fmax(first, next)) << 0);
-						emitEdges.push_back(edge);
-					}
-
-					emitPolys.push_back(j);
-				}
-			}
-
-			for (int j = 0; j < hullpolys.size(); j++)
-			{
-				for (int k = 0; k < emitPolys.size(); k++)
-				{
-					if (emitPolys[k] == j) continue;
-
-					if (hullpolys[emitPolys[k]].planeIndex == hullpolys[j].planeIndex)
-					{
-						bool found = false;
-
-						for (int l = 0; l < emitPolys.size(); l++)
-							if (emitPolys[l] == j)
-								found = true;
-
-						if (!found)
-						{
-							for (int l = 0; l < hullpolys[j].points.size(); l++)
-							{
-								emitPoints.push_back(hullpolys[j].points[l]);
-
-								int first = hullpolys[j].points[l];
-								int next = hullpolys[j].points[(l + 1) % hullpolys[j].points.size()];
-
-								int edge = (((int)fmin(first, next) << 8) | ((int)fmax(first, next)) << 0);
-								emitEdges.push_back(edge);
-							}
-							emitPolys.push_back
-(j);
-						}
-					}
-				}
-			}
-
-			std::sort(emitPoints.begin(), emitPoints.end());
-			auto last = std::unique(emitPoints.begin(), emitPoints.end());
-			emitPoints.erase(last, emitPoints.end());
-			std::sort(emitPoints.begin(), emitPoints.end());
-
-
-			std::sort(emitEdges.begin(), emitEdges.end());
-			auto last2 = std::unique(emitEdges.begin(), emitEdges.end());
-			emitEdges.erase(last2, emitEdges.end());
-			std::sort(emitEdges.begin(), emitEdges.end());
-
-			for (int j = 0; j < emitEdges.size(); j++)
-			{
-				int firstIndex = emitEdges[j] >> 8;
-				int nextIndex = emitEdges[j] & 0xFF;
-
-				int newFirst = 0xFFFF;
-				int newNext = 0xFFFF;
-				for (int k = 0; k < emitPoints.size(); k++)
-				{
-					if (emitPoints[k] == firstIndex)
-						newFirst = k;
-					if (emitPoints[k] == nextIndex)
-						newNext = k;
-				}
-
-				int newSignature = (((int)fmin(newFirst, newNext) << 8) |
-					((int)fmax(newFirst, newNext) << 0));
-				emitEdges[j] = newSignature;
-			}
-
-			std::vector<U8> emitString = std::vector<U8>();
-
-			emitString.push_back(emitPoints.size());
-			for (auto &p : emitPoints)
-				emitString.push_back(i);
-
-			emitString.push_back(emitEdges.size());
-			for (auto &e : emitEdges)
-			{
-				emitString.push_back(e >> 8);
-				emitString.push_back(e & 0xFF);
-			}
-
-			emitString.push_back(emitPolys.size());
-
-			for (int j = 0; j < emitPolys.size(); j++)
-			{
-				emitString.push_back(hullpolys[emitPolys[j]].points.size());
-				emitString.push_back(emitPolys[j]);
-				for (int k = 0; k < hullpolys[emitPolys[j]].points.size(); k++)
+				for (int j = 0; j < hullpolys.size(); j++)
 				{
 					bool found = false;
-					for (int l = 0; l < emitPoints.size(); l++)
-					{
-						if (emitPoints[l] == hullpolys[emitPolys[j]].points[k])
-						{
-							emitString.push_back(l);
+					for (int k = 0; k < hullpolys[j].points.size(); k++)
+						if (hullpolys[j].points[k] == point)
 							found = true;
-							break;
+
+					if (found)
+					{
+						for (int k = 0; k < hullpolys[j].points.size(); k++)
+							emitPoints.push_back(hullpolys[j].points[k]);
+
+						for (int k = 0; k < hullpolys[j].points.size(); k++)
+						{
+							int first = hullpolys[j].points[k];
+							int next = hullpolys[j].points[(k + 1) % hullpolys[j].points.size()];
+
+							int edge = (((int)fmin(first, next) << 8) | ((int)fmax(first, next)) << 0);
+							emitEdges.push_back(edge);
+						}
+
+						emitPolys.push_back(j);
+					}
+				}
+
+				for (int j = 0; j < hullpolys.size(); j++)
+				{
+					for (int k = 0; k < emitPolys.size(); k++)
+					{
+						if (emitPolys[k] == j) continue;
+
+						if (hullpolys[emitPolys[k]].planeIndex == hullpolys[j].planeIndex)
+						{
+							bool found = false;
+
+							for (int l = 0; l < emitPolys.size(); l++)
+								if (emitPolys[l] == j)
+									found = true;
+
+							if (!found)
+							{
+								for (int l = 0; l < hullpolys[j].points.size(); l++)
+								{
+									emitPoints.push_back(hullpolys[j].points[l]);
+
+									int first = hullpolys[j].points[l];
+									int next = hullpolys[j].points[(l + 1) % hullpolys[j].points.size()];
+
+									int edge = (((int)fmin(first, next) << 8) | ((int)fmax(first, next)) << 0);
+									emitEdges.push_back(edge);
+								}
+								emitPolys.push_back
+								(j);
+							}
 						}
 					}
 				}
+
+				std::sort(emitPoints.begin(), emitPoints.end());
+				auto last = std::unique(emitPoints.begin(), emitPoints.end());
+				emitPoints.erase(last, emitPoints.end());
+				std::sort(emitPoints.begin(), emitPoints.end());
+
+
+				std::sort(emitEdges.begin(), emitEdges.end());
+				auto last2 = std::unique(emitEdges.begin(), emitEdges.end());
+				emitEdges.erase(last2, emitEdges.end());
+				std::sort(emitEdges.begin(), emitEdges.end());
+
+				for (int j = 0; j < emitEdges.size(); j++)
+				{
+					int firstIndex = emitEdges[j] >> 8;
+					int nextIndex = emitEdges[j] & 0xFF;
+
+					int newFirst = 0xFFFF;
+					int newNext = 0xFFFF;
+					for (int k = 0; k < emitPoints.size(); k++)
+					{
+						if (emitPoints[k] == firstIndex)
+							newFirst = k;
+						if (emitPoints[k] == nextIndex)
+							newNext = k;
+					}
+
+					int newSignature = (((int)fmin(newFirst, newNext) << 8) |
+						((int)fmax(newFirst, newNext) << 0));
+					emitEdges[j] = newSignature;
+				}
+
+				std::vector<U8> emitString = std::vector<U8>();
+
+				emitString.push_back(emitPoints.size());
+				for (auto& p : emitPoints)
+					emitString.push_back(i);
+
+				emitString.push_back(emitEdges.size());
+				for (auto& e : emitEdges)
+				{
+					emitString.push_back(e >> 8);
+					emitString.push_back(e & 0xFF);
+				}
+
+				emitString.push_back(emitPolys.size());
+
+				for (int j = 0; j < emitPolys.size(); j++)
+				{
+					emitString.push_back(hullpolys[emitPolys[j]].points.size());
+					emitString.push_back(emitPolys[j]);
+					for (int k = 0; k < hullpolys[emitPolys[j]].points.size(); k++)
+					{
+						bool found = false;
+						for (int l = 0; l < emitPoints.size(); l++)
+						{
+							if (emitPoints[l] == hullpolys[emitPolys[j]].points[k])
+							{
+								emitString.push_back(l);
+								found = true;
+								break;
+							}
+						}
+					}
+				}
+
+				interior->hullEmitStringIndex.push_back(ExportEmitString(interior, emitString, emitstrHashes));
+
+				//interior->hullEmitStringIndex.push_back(0);
 			}
-
-			interior->hullEmitStringIndex.push_back(ExportEmitString(interior, emitString,emitstrHashes));
-
-			//interior->hullEmitStringIndex.push_back(0);
+		}
+		else
+		{
+			for (int i = 0; i < hullPoints.size(); i++)
+				interior->hullEmitStringIndex.push_back(0);
 		}
 		interior->convexHull.push_back(hull);			
-	}	
+	}
+	if (!exportEmitStrings)
+	{
+		interior->convexHullEmitStringCharacter.push_back(0);
+	}
 	//interior->convexHullEmitStringCharacter.push_back(0);
 	interior->polyListStringCharacter.push_back(0);
 }
@@ -780,7 +792,7 @@ void DIFBuilder::build(DIF &dif,bool flipNormals)
 
 	printf("Exporting Convex Hulls\n");
 	std::vector<ObjectHash> emitStrHashes;
-	ExportConvexHulls(&interior, groupedPolys, &pointhashes, &planehashes,&emitStrHashes);
+	ExportConvexHulls(&interior, groupedPolys, &pointhashes, &planehashes,&emitStrHashes,this->exportEmitStrings);
 
 	printf("Exporting Zones\n");
 	Interior::Zone z = Interior::Zone();
