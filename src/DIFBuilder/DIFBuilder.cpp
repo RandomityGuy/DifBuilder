@@ -927,192 +927,23 @@ std::ostream &operator<<(std::ostream &stream, const glm::mat3x4 &input) {
 	              << std::setw(10) << input[2][0] << " " << std::setw(10) << input[2][1] << " " << std::setw(10) << input[2][2] << " " << std::setw(10) << input[2][3] << std::endl;
 }
 
-//The 3 elementary matrix row operations that you can apply without changing the result
-void swapRows(glm::mat3x4 &mat, int rowA, int rowB) {
-	std::swap(mat[rowA], mat[rowB]);
-}
-void scaleRow(glm::mat3x4 &mat, int row, float scale) {
-	mat[row] *= scale;
-}
-void addRow(glm::mat3x4 &mat, int destRow, int srcRow, float factor) {
-	mat[destRow] += mat[srcRow] * factor;
-}
-
-glm::vec3 solveMatrix(glm::mat3x4 pointMatrix, bool print = false) {
-#define MaybePrint(a) if (print) { std::cout << a << std::endl; }
-
-	//Clean up stuff that is almost zero
-	MaybePrint(pointMatrix);
-	if (closeEnough(pointMatrix[0][0], 0.f)) pointMatrix[0][0] = 0.f;
-	if (closeEnough(pointMatrix[1][0], 0.f)) pointMatrix[1][0] = 0.f;
-	if (closeEnough(pointMatrix[2][0], 0.f)) pointMatrix[2][0] = 0.f;
-	if (closeEnough(pointMatrix[0][1], 0.f)) pointMatrix[0][1] = 0.f;
-	if (closeEnough(pointMatrix[1][1], 0.f)) pointMatrix[1][1] = 0.f;
-	if (closeEnough(pointMatrix[2][1], 0.f)) pointMatrix[2][1] = 0.f;
-	if (closeEnough(pointMatrix[0][2], 0.f)) pointMatrix[0][2] = 0.f;
-	if (closeEnough(pointMatrix[1][2], 0.f)) pointMatrix[1][2] = 0.f;
-	if (closeEnough(pointMatrix[2][2], 0.f)) pointMatrix[2][2] = 0.f;
-	if (closeEnough(pointMatrix[0][3], 0.f)) pointMatrix[0][3] = 0.f;
-	if (closeEnough(pointMatrix[1][3], 0.f)) pointMatrix[1][3] = 0.f;
-	if (closeEnough(pointMatrix[2][3], 0.f)) pointMatrix[2][3] = 0.f;
-	MaybePrint(pointMatrix);
-
-	//For checking at the end
-	glm::mat3x4 test = pointMatrix;
-
-	/*
-	 We have three simultaneous equations:
-	 ax + by + cz = uv0
-	 dx + ey + fz = uv1
-	 gx + hy + iz = uv2
-
-	 We can arrange them in a matrix like this:
-	 [ a b c ]   ( x )   ( uv0 )
-	 [ d e f ] x ( y ) = ( uv1 )
-	 [ g h i ]   ( z )   ( uv2 )
-	 
-	 And then if we can get the matrix into reduced echelon form we can solve
-	 for (x y z) with no trouble.
-	 */
-
-	//Swap around rows so that we can get something non-zero for [0][0]
-	if (closeEnough(pointMatrix[0][0], 0.f)) {
-		if (closeEnough(pointMatrix[1][0], 0.f)) {
-			swapRows(pointMatrix, 0, 2);
-			MaybePrint(pointMatrix);
-		} else {
-			swapRows(pointMatrix, 0, 1);
-			MaybePrint(pointMatrix);
-		}
-	}
-	//If all three have zero for [0][0] then we're fine here
-	if (!closeEnough(pointMatrix[0][0], 0.f)) {
-		/*
-		 Reduce second and third rows so the first column is zero
-		 To get
-		 [ a b c ]
-		 [ 0 d e ]
-		 [ 0 f g ]
-		 */
-		if (!closeEnough(pointMatrix[1][0], 0.f)) {
-			addRow(pointMatrix, 1, 0, -pointMatrix[1][0] / pointMatrix[0][0]);
-			MaybePrint(pointMatrix);
-		}
-		if (!closeEnough(pointMatrix[2][0], 0.f)) {
-			addRow(pointMatrix, 2, 0, -pointMatrix[2][0] / pointMatrix[0][0]);
-			MaybePrint(pointMatrix);
-		}
-	}
-
-	//If mat[1][1] is zero we should swap rows 1 and 2 so we can reduce the other row
-	if (closeEnough(pointMatrix[1][1], 0.f)) {
-		swapRows(pointMatrix, 1, 2);
-		MaybePrint(pointMatrix);
-	}
-	//If mat[1][1] is zero then both [1][1] and [2][1] are zero and we can continue
-	if (!closeEnough(pointMatrix[1][1], 0.f)) {
-		/*
-		 Reverse third row so the second column is zero
-		 To get
-		 [ a b c ]
-		 [ 0 d e ]
-		 [ 0 0 f ]
-		 */
-		if (!closeEnough(pointMatrix[2][1], 0.f)) {
-			addRow(pointMatrix, 2, 1, -pointMatrix[2][1] / pointMatrix[1][1]);
-			MaybePrint(pointMatrix);
-		}
-	}
-
-	/*
-	 Scale each of the rows so the first component is one
-	 To get
-	 [ 1 a b ]
-	 [ 0 1 c ]
-	 [ 0 0 1 ]
-	 */
-	if (!closeEnough(pointMatrix[0][0], 0.f, 0.00001f)) {
-		scaleRow(pointMatrix, 0, 1.0f / pointMatrix[0][0]);
-		MaybePrint(pointMatrix);
-	}
-	if (!closeEnough(pointMatrix[1][1], 0.f, 0.00001f)) {
-		scaleRow(pointMatrix, 1, 1.0f / pointMatrix[1][1]);
-		MaybePrint(pointMatrix);
-	}
-	if (!closeEnough(pointMatrix[2][2], 0.f, 0.00001f)) {
-		scaleRow(pointMatrix, 2, 1.0f / pointMatrix[2][2]);
-		MaybePrint(pointMatrix);
-	}
-
-	/*
-	 At this point the matrix is
-
-	 [ 1 a b ]   ( x )   ( uv0' )
-	 [ 0 1 c ] x ( y ) = ( uv1' )
-	 [ 0 0 1 ]   ( z )   ( uv2' )
-
-	 where
-	 x + ay + bz = uv0
-	      y + cz = uv1
-	           z = uv2
-
-	 therefore
-	 z = uv2'
-	 y = uv1' - cz
-	 x = uv0' - ay - bz
-
-	 */
-
-	//Convenience
-	const glm::vec4 &xvec = pointMatrix[0];
-	const glm::vec4 &yvec = pointMatrix[1];
-	const glm::vec4 &zvec = pointMatrix[2];
-
-	//These are easy now
-	float z = zvec[3];
-	float y = yvec[3] - z * yvec[2];
-	float x = xvec[3] - y * xvec[1] - z * xvec[2];
-
-	//Check our work
-//	assert(closeEnough(x * test[0][0] + y * test[0][1] + z * test[0][2], test[0][3]));
-//	assert(closeEnough(x * test[1][0] + y * test[1][1] + z * test[1][2], test[1][3]));
-//	assert(closeEnough(x * test[2][0] + y * test[2][1] + z * test[2][2], test[2][3]));
-
-	//And there we go
-	return glm::vec3(x, y, z);
-}
-
 Interior::TexGenEq getTexGenFromPoints(const glm::vec3 &point0, const glm::vec3 &point1, const glm::vec3 &point2,
 								  glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2) {
 	Interior::TexGenEq texGen;
 
-	//Construct these matrices for the solver to figure out
-	glm::mat3x4	xTexMat = glm::mat3x4(glm::vec4(point0, uv0.x), glm::vec4(point1, uv1.x), glm::vec4(point2, uv2.x));
-	glm::mat3x4 yTexMat = glm::mat3x4(glm::vec4(point0, uv0.y), glm::vec4(point1, uv1.y), glm::vec4(point2, uv2.y));
+	glm::mat3x3 mat = glm::mat3x3(point0, point1, point2);
+	if (glm::determinant(mat) == 0) // One of our points lies on the coordinate planes, so we push all the points by an offset
+	{
+		glm::vec3 offset = glm::vec3(0.5, 0.5, 0.5);
+		mat = glm::mat3x3(point0 + offset, point1 + offset, point2 + offset);
+	}
+	glm::mat3x3 inv = glm::inverse(mat);
 
-	//Solving is rather simple
-	glm::vec3 xsolve = solveMatrix(xTexMat);
-	glm::vec3 ysolve = solveMatrix(yTexMat);
+	glm::vec3 xuv = glm::vec3(uv0.x, uv1.x, uv2.x);
+	glm::vec3 yuv = glm::vec3(uv0.y, uv1.y, uv2.y);
 
-	//Rigorous checking because I don't like being wrong
-	if (!closeEnough(xsolve.x * point0.x + xsolve.y * point0.y + xsolve.z * point0.z, uv0.x, 0.001f)) {
-		solveMatrix(xTexMat, false);
-	}
-	if (!closeEnough(xsolve.x * point1.x + xsolve.y * point1.y + xsolve.z * point1.z, uv1.x, 0.001f)) {
-		solveMatrix(xTexMat, false);
-	}
-	if (!closeEnough(xsolve.x * point2.x + xsolve.y * point2.y + xsolve.z * point2.z, uv2.x, 0.001f)) {
-		solveMatrix(xTexMat, false);
-	}
-	if (!closeEnough(ysolve.x * point0.x + ysolve.y * point0.y + ysolve.z * point0.z, uv0.y, 0.001f)) {
-		solveMatrix(yTexMat, false);
-	}
-	if (!closeEnough(ysolve.x * point1.x + ysolve.y * point1.y + ysolve.z * point1.z, uv1.y, 0.001f)) {
-		solveMatrix(yTexMat, false);
-	}
-	if (!closeEnough(ysolve.x * point2.x + ysolve.y * point2.y + ysolve.z * point2.z, uv2.y, 0.001f)) {
-		solveMatrix(yTexMat, false);
-	}
+	glm::vec3 xsolve = xuv * inv;
+	glm::vec3 ysolve = yuv * inv;
 
 	//And there we go
 	texGen.planeX.x = xsolve.x;
