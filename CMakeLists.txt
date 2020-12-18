@@ -51,6 +51,7 @@ SET (DIFBUILDER_SRC
 # Create the library
 add_library(DifBuilder STATIC ${DIFBUILDER_SRC})
 include_directories(include)
+include_directories(3rdparty)
 include_directories(3rdparty/Dif)
 include_directories(3rdparty/Dif/3rdparty/glm)
 include_directories(3rdparty/Dif/include)
