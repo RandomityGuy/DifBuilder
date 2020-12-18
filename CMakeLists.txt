@@ -8,7 +8,7 @@ add_subdirectory(3rdparty/Dif)
 if (UNIX)
 list (APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 else()
-list (APPEND CMAKE_CXX_FLAGS "/MP ${CMAKE_CXX_FLAGS}")
+list (APPEND CMAKE_CXX_FLAGS "/MP /FS ${CMAKE_CXX_FLAGS}")
 endif()
 
 # Enable Static Linking the C++ ABI directly into the executables and libraries
