@@ -43,7 +43,9 @@ endmacro()
 
 SET (DIFBUILDER_SRC
 	src/DIFBuilder/DIFBuilder.cpp
+	src/DIFBuilder/BSPLib.cpp
 	include/DIFBuilder/DIFBuilder.hpp
+	include/DIFBuilder/BSPLib.h
 )
 
 # Create the library
