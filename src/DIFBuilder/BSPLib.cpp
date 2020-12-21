@@ -1,10 +1,10 @@
 #include "DIFBuilder/BSPLib.h"
-#include <glm\glm.hpp>
+#include <glm/glm.hpp>
 #include <algorithm>
 #include <future>
 #include <unordered_set>
 #include <map>
-#include "Nanoflann\include\nanoflann.hpp"
+#include "Nanoflann/include/nanoflann.hpp"
 #include <sstream>
 
 template<typename T>
@@ -104,7 +104,7 @@ void CalculateCenter(BSPNode* bsp)
 				CalculateCenter(bsp->Front);
 
 			c++;
-			avgcenter += *bsp->Front->center;
+			avgcenter += *(bsp->Front->center);
 		}
 		if (bsp->Back != NULL)
 		{
@@ -112,7 +112,7 @@ void CalculateCenter(BSPNode* bsp)
 				CalculateCenter(bsp->Back);
 
 			c++;
-			avgcenter += *bsp->Back->center;
+			avgcenter += *(bsp->Back->center);
 		}
 		avgcenter /= c;
 

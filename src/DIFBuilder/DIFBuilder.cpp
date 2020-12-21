@@ -26,7 +26,7 @@
 //-----------------------------------------------------------------------------
 
 #include <DIFBuilder/DIFBuilder.hpp>
-#include "DIFBuilder\BSPLib.h"
+#include "DIFBuilder/BSPLib.h"
 #include <iomanip>
 #include <math.h>
 #include <algorithm>
@@ -674,7 +674,7 @@ void ExportCoordBins(Interior* interior)
 
 			for (int k = 0; k < interior->convexHull.size(); k++)
 			{
-				auto hull = interior->convexHull[k];
+				const auto& hull = interior->convexHull[k];
 
 				if (!(minX > hull.maxX || maxX < hull.minX || maxY < hull.minY || minY > hull.maxY))
 				{
@@ -857,6 +857,7 @@ void DIFBuilder::build(DIF &dif,bool flipNormals)
 		char buffer[32];
 		sprintf(buffer, "%d", it.second[0].initialTargetPosition);
 		pathedInterior.properties.push_back(std::pair<std::string, std::string>(std::string("initialTargetPosition"), std::string(buffer)));
+
 		dif.interiorPathFollower.push_back(pathedInterior);
 	}
 
