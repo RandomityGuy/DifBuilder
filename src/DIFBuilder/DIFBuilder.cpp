@@ -857,6 +857,7 @@ void DIFBuilder::build(DIF &dif,bool flipNormals)
 		char buffer[32];
 		sprintf(buffer, "%d", it.second[0].initialTargetPosition);
 		pathedInterior.properties.push_back(std::pair<std::string, std::string>(std::string("initialTargetPosition"), std::string(buffer)));
+		dif.interiorPathFollower.push_back(pathedInterior);
 	}
 
 	printf("Exporting Entities\n");
