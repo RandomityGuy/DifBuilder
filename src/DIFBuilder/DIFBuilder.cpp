@@ -691,13 +691,13 @@ void ExportCoordBins(Interior* interior)
 	}
 }
 
-Trigger ExportTrigger(DIFBuilder::Trigger& trigger)
+void ExportTrigger(DIF* dif, DIFBuilder::Trigger& trigger)
 {
 	Trigger trig = Trigger();
 	trig.datablock = trigger.datablock;
 	trig.name = trigger.name;
 	trig.offset = trigger.position;
-	trig.properties = trigger.properties;
+	trig.properties = Dictionary(trigger.properties);
 	trig.polyhedron = Trigger::PolyHedron();
 
 	trig.polyhedron.pointList.push_back(glm::vec3(-0.5, -0.5, 0.5));
@@ -801,7 +801,7 @@ Trigger ExportTrigger(DIFBuilder::Trigger& trigger)
 	trig.polyhedron.edgeList.push_back(e11);
 	trig.polyhedron.edgeList.push_back(e12);
 
-	return trig;
+	dif->trigger.push_back(trig);
 }
 
 void DIFBuilder::build(DIF &dif,bool flipNormals) 
@@ -986,8 +986,7 @@ void DIFBuilder::build(DIF &dif,bool flipNormals)
 	printf("Exporting Triggers\n");
 	for (auto& it : mTriggers)
 	{
-		auto trig = ExportTrigger(it);
-		dif.trigger.push_back(trig);
+		ExportTrigger(&dif,it);
 	}
 
 	printf("Finalizing\n");
