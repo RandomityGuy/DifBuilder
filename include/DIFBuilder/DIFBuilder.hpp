@@ -72,8 +72,6 @@ public:
 	};
 	struct Trigger
 	{
-		glm::vec3 min;
-		glm::vec3 max;
 		std::string name;
 		std::string datablock;
 		glm::vec3 position;
