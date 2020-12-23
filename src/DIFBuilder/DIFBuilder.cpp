@@ -26,7 +26,7 @@
 //-----------------------------------------------------------------------------
 
 #include <DIFBuilder/DIFBuilder.hpp>
-#include "DIFBuilder\BSPLib.h"
+#include "DIFBuilder/BSPLib.h"
 #include <iomanip>
 #include <math.h>
 #include <algorithm>
@@ -81,6 +81,11 @@ void DIFBuilder::addPathedInterior(const Interior &interior, std::vector<Marker>
 void DIFBuilder::addEntity(const GameEntity& entity)
 {
 	mGameEntities.push_back(entity);
+}
+
+void DIFBuilder::addTrigger(const Trigger& trigger)
+{
+	mTriggers.push_back(trigger);
 }
 
 //Here come the dif writing functions, algorithm is nearly the same as the ones used in map2dif
@@ -674,7 +679,7 @@ void ExportCoordBins(Interior* interior)
 
 			for (int k = 0; k < interior->convexHull.size(); k++)
 			{
-				auto hull = interior->convexHull[k];
+				const auto& hull = interior->convexHull[k];
 
 				if (!(minX > hull.maxX || maxX < hull.minX || maxY < hull.minY || minY > hull.maxY))
 				{
@@ -684,6 +689,134 @@ void ExportCoordBins(Interior* interior)
 			interior->coordBin[binIndex].binCount = interior->coordBinIndex.size() - interior->coordBin[binIndex].binStart;
 		}
 	}
+}
+
+Trigger ExportTrigger(DIFBuilder::Trigger& trigger)
+{
+	Trigger trig = Trigger();
+	trig.datablock = trigger.datablock;
+	trig.name = trigger.name;
+	trig.offset = trigger.position;
+	trig.properties = trigger.properties;
+	trig.polyhedron = Trigger::PolyHedron();
+
+	glm::vec3 dbl = trigger.min;
+	glm::vec3 utr = trigger.max;
+	glm::vec3 dbr = glm::vec3(trigger.max.x, trigger.min.y, trigger.min.z);
+	glm::vec3 dtl = glm::vec3(trigger.min.x, trigger.max.y, trigger.min.z);
+	glm::vec3 dtr = glm::vec3(trigger.max.x, trigger.max.y, trigger.min.z);
+	glm::vec3 ubl = glm::vec3(trigger.min.x, trigger.min.y, trigger.max.z);
+	glm::vec3 ubr = glm::vec3(trigger.max.x, trigger.min.y, trigger.max.z);
+	glm::vec3 utl = glm::vec3(trigger.min.x, trigger.max.y, trigger.max.z);
+
+	trig.polyhedron.pointList.push_back(dbl);
+	trig.polyhedron.pointList.push_back(utr);
+	trig.polyhedron.pointList.push_back(dbr);
+	trig.polyhedron.pointList.push_back(dtl);
+	trig.polyhedron.pointList.push_back(dtr);
+	trig.polyhedron.pointList.push_back(ubl);
+	trig.polyhedron.pointList.push_back(ubr);
+	trig.polyhedron.pointList.push_back(utl);
+
+	PlaneF u = PlaneF(0, 0, 1, trigger.max.z - trigger.min.z);
+	PlaneF d = PlaneF(0, 0, -1, 0);
+	PlaneF l = PlaneF(-1, 0, 0, 0);
+	PlaneF r = PlaneF(1, 0, 0, trigger.max.x - trigger.min.x);
+	PlaneF t = PlaneF(0, 1, 0, trigger.max.y - trigger.min.y);
+	PlaneF b = PlaneF(0, -1, 0, 0);
+
+	trig.polyhedron.planeList.push_back(u);
+	trig.polyhedron.planeList.push_back(d);
+	trig.polyhedron.planeList.push_back(l);
+	trig.polyhedron.planeList.push_back(r);
+	trig.polyhedron.planeList.push_back(t);
+	trig.polyhedron.planeList.push_back(b);
+
+	Trigger::PolyHedronEdge dbldbr;
+	dbldbr.face[0] = 1;
+	dbldbr.face[1] = 5;
+	dbldbr.vertex[0] = 0;
+	dbldbr.vertex[1] = 2;
+	trig.polyhedron.edgeList.push_back(dbldbr);
+
+	Trigger::PolyHedronEdge dbldtr;
+	dbldtr.face[0] = 1;
+	dbldtr.face[1] = 2;
+	dbldtr.vertex[0] = 0;
+	dbldtr.vertex[1] = 4;
+	trig.polyhedron.edgeList.push_back(dbldtr);
+
+	Trigger::PolyHedronEdge dtldtr;
+	dtldtr.face[0] = 1;
+	dtldtr.face[1] = 4;
+	dtldtr.vertex[0] = 3;
+	dtldtr.vertex[1] = 4;
+	trig.polyhedron.edgeList.push_back(dtldtr);
+
+	Trigger::PolyHedronEdge dtrdbr;
+	dtrdbr.face[0] = 1;
+	dtrdbr.face[1] = 3;
+	dtrdbr.vertex[0] = 4;
+	dtrdbr.vertex[1] = 2;
+	trig.polyhedron.edgeList.push_back(dtrdbr);
+
+	Trigger::PolyHedronEdge ublubr;
+	ublubr.face[0] = 0;
+	ublubr.face[1] = 5;
+	ublubr.vertex[0] = 5;
+	ublubr.vertex[1] = 6;
+	trig.polyhedron.edgeList.push_back(ublubr);
+
+	Trigger::PolyHedronEdge ublutr;
+	ublutr.face[0] = 0;
+	ublutr.face[1] = 2;
+	ublutr.vertex[0] = 5;
+	ublutr.vertex[1] = 1;
+	trig.polyhedron.edgeList.push_back(ublutr);
+
+	Trigger::PolyHedronEdge utlutr;
+	utlutr.face[0] = 0;
+	utlutr.face[1] = 4;
+	utlutr.vertex[0] = 7;
+	utlutr.vertex[1] = 1;
+	trig.polyhedron.edgeList.push_back(utlutr);
+
+	Trigger::PolyHedronEdge utrubr;
+	utrubr.face[0] = 0;
+	utrubr.face[1] = 3;
+	utrubr.vertex[0] = 1;
+	utrubr.vertex[1] = 6;
+	trig.polyhedron.edgeList.push_back(utrubr);
+
+	Trigger::PolyHedronEdge dblubl;
+	dblubl.face[0] = 2;
+	dblubl.face[1] = 5;
+	dblubl.vertex[0] = 0;
+	dblubl.vertex[1] = 5;
+	trig.polyhedron.edgeList.push_back(dblubl);
+
+	Trigger::PolyHedronEdge dtlutl;
+	dtlutl.face[0] = 2;
+	dtlutl.face[1] = 4;
+	dtlutl.vertex[0] = 3;
+	dtlutl.vertex[1] = 7;
+	trig.polyhedron.edgeList.push_back(dtlutl);
+
+	Trigger::PolyHedronEdge dbrubr;
+	dbrubr.face[0] = 3;
+	dbrubr.face[1] = 5;
+	dbrubr.vertex[0] = 2;
+	dbrubr.vertex[1] = 6;
+	trig.polyhedron.edgeList.push_back(dbrubr);
+
+	Trigger::PolyHedronEdge dtrutr;
+	dtrutr.face[0] = 3;
+	dtrutr.face[1] = 4;
+	dtrutr.vertex[0] = 1;
+	dtrutr.vertex[1] = 4;
+	trig.polyhedron.edgeList.push_back(dtrutr);
+
+	return trig;
 }
 
 void DIFBuilder::build(DIF &dif,bool flipNormals) 
@@ -857,12 +990,20 @@ void DIFBuilder::build(DIF &dif,bool flipNormals)
 		char buffer[32];
 		sprintf(buffer, "%d", it.second[0].initialTargetPosition);
 		pathedInterior.properties.push_back(std::pair<std::string, std::string>(std::string("initialTargetPosition"), std::string(buffer)));
+
 		dif.interiorPathFollower.push_back(pathedInterior);
 	}
 
 	printf("Exporting Entities\n");
 	dif.gameEntity = mGameEntities;
-	dif.readGameEntities = true;
+	dif.readGameEntities = 2;
+
+	printf("Exporting Triggers\n");
+	for (auto& it : mTriggers)
+	{
+		auto trig = ExportTrigger(it);
+		dif.trigger.push_back(trig);
+	}
 
 	printf("Finalizing\n");
 	//FixPlanes(interior.plane, interior.normal);

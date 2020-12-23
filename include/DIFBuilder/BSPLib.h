@@ -59,7 +59,7 @@ public:
 
 	glm::vec3 pt;
 	glm::vec3 normal;
-	float d;
+	float d = 0;
 };
 
 struct Polygon;
@@ -87,7 +87,7 @@ struct Polygon
 	std::vector<int> Indices;
 	glm::vec3 Normal;
 	Plane plane;
-	long TextureIndex;
+	long TextureIndex = 0;
 	BSPNode* node = NULL;
 	bool IsUsed = false;
 };
